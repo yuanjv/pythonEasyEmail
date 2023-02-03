@@ -30,32 +30,31 @@ class EasyEmail:
         else:
             raise TypeError("only str, int, and list are allowed to be the receiver var")
     @staticmethod
-    def receiveAsDic():
-        imap=imaplib.IMAP4_SSL(IMAP_SERVER)
-        imap.login(EasyEmail._EMAIL_ADDR,EasyEmail._EMAIL_PASSWD)
-        imap.select("Inbox")
-        _,msgNum=imap.search(None,"ALL")
+    def receiveAsDic()->dict:
         dic={}
+        with imaplib.IMAP4_SSL(IMAP_SERVER) as imap:
+            imap.login(EasyEmail._EMAIL_ADDR,EasyEmail._EMAIL_PASSWD)
+            imap.select("Inbox")
+            _,msgNum=imap.search(None,"ALL")
 
-        for i,num in enumerate(msgNum[0].split()):
-            _,data=imap.fetch(num,"(RFC822)")
-            
-            msg=email.message_from_string(data[0][1].decode())
-            content=None
-            for part in msg.walk():
-                if part.get_content_type() == 'text/plain':
-                    content=part.get_payload()
+            for i,num in enumerate(msgNum[0].split()):
+                _,data=imap.fetch(num,"(RFC822)")
+                
+                msg=email.message_from_string(data[0][1].decode())
+                content=None
+                for part in msg.walk():
+                    if part.get_content_type() == 'text/plain':
+                        content=part.get_payload()
 
-            dic[i]={'from':msg.get('From'),'to':msg.get('To'),'bcc':msg.get('BCC'),'date':msg.get('Date'),'subject':msg.get('Subject'),'content':content}
+                dic[i]={'from':msg.get('From'),'to':msg.get('To'),'bcc':msg.get('BCC'),'date':msg.get('Date'),'subject':msg.get('Subject'),'content':content}
         
-        imap.close()
         return dic
     
     @staticmethod
-    def receiveAsJson(indent:int=4):
+    def receiveAsJson(indent:int=4)->json:
         return json.dumps(EasyEmail.receiveAsDic(),indent=indent)
     @staticmethod
-    def receiveAsList():
+    def receiveAsList()->list:
         return list(EasyEmail.receiveAsDic().values())
 
         
